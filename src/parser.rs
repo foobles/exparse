@@ -259,3 +259,22 @@ impl Parser for I32 {
     }
 }
 
+pub fn from_fn<F, T>(func: F) -> FromFn<F>
+where
+    F: Fn(&mut ParseState) -> Result<T, ParseError>
+{
+    FromFn(func)
+}
+
+pub struct FromFn<F>(F);
+
+impl<F, T> Parser for FromFn<F>
+where
+    F: Fn(&mut ParseState) -> Result<T, ParseError>
+{
+    type Output = T;
+
+    fn parse(&self, state: &mut ParseState) -> Result<T, ParseError> {
+        self.0(state)
+    }
+}
