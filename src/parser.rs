@@ -62,8 +62,12 @@ pub trait Parser: Sized {
         }
     }
 
-    fn many(self) -> Many<Self> {
-        Many(self)
+    fn or_more(self) -> OrMore<Self> {
+        OrMore(self)
+    }
+
+    fn any_number(self) -> AnyNumber<Self> {
+        AnyNumber(self)
     }
 }
 
@@ -162,11 +166,24 @@ where
     }
 }
 
+pub struct AnyNumber<P>(P);
+
+impl<P: Parser> Parser for AnyNumber<P> {
+    type Output = Vec<P::Output>;
+
+    fn parse(&self, state: &mut ParseState) -> Result<Self::Output, ParseError> {
+        let mut ret = Vec::new();
+        while let Ok(x) = state.parse(&self.0) {
+            ret.push(x);
+        }
+        Ok(ret)
+    }
+}
 
 
-pub struct Many<P>(P);
+pub struct OrMore<P>(P);
 
-impl<P: Parser> Parser for Many<P> {
+impl<P: Parser> Parser for OrMore<P> {
     type Output = Vec<P::Output>;
 
     fn parse(&self, state: &mut ParseState) -> Result<Self::Output, ParseError> {
@@ -207,7 +224,7 @@ impl Parser for I32 {
             Err(_) => 1
         };
         let mut ret = 0;
-        for d in state.parse(digit().many())? {
+        for d in state.parse(digit().or_more())? {
             ret *= 10;
             ret += d.to_digit(10).unwrap() as i32;
         }
