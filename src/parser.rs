@@ -1,4 +1,4 @@
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct ParseState<'a> {
     text: &'a str,
     row: usize,
@@ -27,12 +27,24 @@ impl<'a> ParseState<'a> {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct ParseError {
     ty: ParseErrorType,
     row: usize,
     col: usize,
 }
 
+impl ParseError {
+    pub fn row(self) -> usize {
+        self.row
+    }
+
+    pub fn col(self) -> usize {
+        self.col
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub enum ParseErrorType {
     EndOfStream,
     NoParse
@@ -120,8 +132,10 @@ impl Parser for Char {
     type Output = char;
 
     fn parse(&self, state: &mut ParseState) -> Result<char, ParseError> {
-        state.parse(any_char()).and_then(|x| {
+        let mut cur = *state;
+        cur.parse(any_char()).and_then(|x| {
             if x == self.0 {
+                *state = cur;
                 Ok(x)
             } else {
                 Err(state.make_error(ParseErrorType::NoParse))
@@ -178,6 +192,10 @@ pub fn digit() -> impl Parser<Output=char> {
 }
 
 pub struct I32;
+
+pub fn i32() -> I32 {
+    I32
+}
 
 impl Parser for I32 {
     type Output = i32;
