@@ -69,6 +69,16 @@ pub trait Parser: Sized {
     fn any_number(self) -> AnyNumber<Self> {
         AnyNumber(self)
     }
+
+    fn map<F, T>(self, func: F) -> Map<Self, F>
+    where
+        F: FnOnce(Self::Output) -> T
+    {
+        Map {
+            parser: self,
+            func
+        }
+    }
 }
 
 impl<P: Parser> Parser for &P {
@@ -192,6 +202,23 @@ impl<P: Parser> Parser for OrMore<P> {
            ret.push(x);
         }
         Ok(ret)
+    }
+}
+
+pub struct Map<P, F> {
+    parser: P,
+    func: F
+}
+
+impl<P, F, T> Parser for Map<P, F>
+where
+    P: Parser,
+    F: Fn(P::Output) -> T
+{
+    type Output = T;
+
+    fn parse(&self, state: &mut ParseState) -> Result<Self::Output, ParseError> {
+        state.parse(&self.parser).map(&self.func)
     }
 }
 
